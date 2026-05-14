@@ -14,7 +14,7 @@ const storeBookmark = async (req, res) => {
       },
       body: JSON.stringify({url, tag, created_at})
       })
-    } catch (error) {
+    } catch (error) { 
       console.error("Error storing bookmark:", error);
   }
 }
