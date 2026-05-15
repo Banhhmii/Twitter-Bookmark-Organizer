@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <h1>Twitter Bookmarks Organizer</h1>
@@ -12,6 +13,11 @@
         <input type="text" id="tagInput" placeholder="Enter tag (optional)">
         <button id="submitBtn" type="submit">Submit</button>
     </form>
+    <form id="filterForm">
+        <input type="text" id="filterInput" placeholder="Filter by tag">
+        <button id="filterBtn" type="submit">Filter</button>
+    </form>
+    <div id="filterResults"></div>
 </body>
 <script src="script.js"></script>
 </html>

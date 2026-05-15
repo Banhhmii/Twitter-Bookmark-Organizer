@@ -38,7 +38,7 @@ app.get('/script.js', (req, res) => {
     });
 });
 
-app.post('/bookmarks', async (req, res) => {
+app.post('/storeBookmark', async (req, res) => {
     const bookmark = req.body;
     const {data, error} = await supabase
         .from('Twitter-Bookmarks')
@@ -49,6 +49,25 @@ app.post('/bookmarks', async (req, res) => {
         res.status(500).json({ error: "Failed to store bookmark" });
     } else {
         res.status(201).json({ message: "Bookmark stored successfully", data: data });
+    }
+});
+
+app.get('/filterBookmarks', async (req, res) => {
+    const filterTag = req.query.tag;
+    try {
+        const { data, error } = await supabase
+            .from('Twitter-Bookmarks')
+            .select('*')
+            .ilike('tag', `%${filterTag}%`);
+        if (error) {
+            console.error("Error filtering bookmarks:", error);
+            res.status(500).json({ error: "Failed to filter bookmarks" });
+        } else {
+            res.status(200).json({ bookmarks: data });
+        }
+    } catch (error) {
+        console.error("Error filtering bookmarks:", error);
+        res.status(500).json({ error: "Failed to filter bookmarks" });
     }
 });
 
