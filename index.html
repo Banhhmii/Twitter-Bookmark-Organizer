@@ -8,16 +8,18 @@
 </head>
 <body>
     <h1>Twitter Bookmarks Organizer</h1>
-    <form id="bookmarkForm">
-        <input type="text" id="bookmarkInput" placeholder="Enter bookmark URL">
-        <input type="text" id="tagInput" placeholder="Enter tag (optional)">
-        <button id="submitBtn" type="submit">Submit</button>
-    </form>
-    <form id="filterForm">
-        <input type="text" id="filterInput" placeholder="Filter by tag">
-        <button id="filterBtn" type="submit">Filter</button>
-    </form>
-    <div id="filterResults"></div>
+    <div class="form-container">
+        <form id="bookmarkForm">
+            <input type="text" id="bookmarkInput" placeholder="Enter bookmark URL">
+            <input type="text" id="tagInput" placeholder="Enter tag (optional)">
+            <button id="submitBtn" type="submit">Submit</button>
+        </form>
+        <form id="filterForm">
+            <input type="text" id="filterInput" placeholder="Filter by tag">
+            <button id="filterBtn" type="submit">Filter</button>
+        </form>
+        <div id="filterResults"></div>
+    </div>
 </body>
 <script src="script.js"></script>
 </html>
