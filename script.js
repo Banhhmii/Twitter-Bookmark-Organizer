@@ -1,9 +1,10 @@
 const storeBookmark = async (req, res) => {
   event.preventDefault();
   const bookmarkUrl = document.getElementById('bookmarkInput').value;
+  const bookmarkTag = document.getElementById('tagInput').value;
   const {url , tag, created_at} = {
     url: bookmarkUrl,
-    tag: "",
+    tag: bookmarkTag || null,
     created_at: new Date().toISOString()
   };
   try {
