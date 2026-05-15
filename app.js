@@ -38,6 +38,21 @@ app.get('/script.js', (req, res) => {
     });
 });
 
+app.get('/styles.css', (req, res) => {
+    const options = {
+        root: __dirname,
+        headers: {
+            'Content-Type': 'text/css'
+        }
+    };
+    res.sendFile('styles.css', options, (err) => {
+        if (err) {
+            console.error("Error sending styles.css:", err);
+            res.status(500).send("Internal Server Error");
+        }
+    });
+});
+
 app.post('/storeBookmark', async (req, res) => {
     const bookmark = req.body;
     const {data, error} = await supabase
