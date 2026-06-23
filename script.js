@@ -1,11 +1,10 @@
 const storeBookmark = async (req, res) => {
   event.preventDefault();
-  const bookmarkUrl = document.getElementById('bookmarkInput').value;
-  const bookmarkTag = document.getElementById('tagInput').value;
-  const {url , tag, created_at} = {
+  const bookmarkUrl = document.getElementById('bookmarkURL').value;
+  const tag = document.getElementById('tag').value;
+  const {url , tag} = {
     url: bookmarkUrl,
-    tag: bookmarkTag || null,
-    created_at: new Date().toISOString()
+    tag: tag|| null,
   };
   try {
     const response = await fetch('/storeBookmark', {
@@ -13,7 +12,7 @@ const storeBookmark = async (req, res) => {
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({url, tag, created_at})
+      body: JSON.stringify({url, tag})
       })
     } catch (error) { 
       console.error("Error storing bookmark:", error);
