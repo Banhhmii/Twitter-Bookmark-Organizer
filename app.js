@@ -1,5 +1,7 @@
 const express = require("express");
 // const supabase = require('./supabaseClient.js');
+const dotenv = require("dotenv");
+dotenv.config();
 const { Pool } = require("pg");
 const fs = require("fs");
 
@@ -58,14 +60,10 @@ app.get("/styles.css", (req, res) => {
 
 app.post("/storeBookmark", async (req, res) => {
   const bookmark = req.body;
-  const { url, tag} = bookmark;
-  // const {data, error} = await supabase
-  //     .from('Twitter-Bookmarks')
-  //     .insert({ url: bookmark.url, tag: bookmark.tag, created_at: bookmark.created_at})
-  //     .select();
+  const { bookmarkUrl, tag} = bookmark;
   pool.query(
     'INSERT INTO "Twitter-Bookmarks" (url, tag) VALUES ($1, $2) RETURNING *',
-    [url, tag],
+    [bookmarkUrl, tag],
     (error, result) => {
       if (error) {
         console.error("Error storing bookmark:", error);
@@ -73,7 +71,7 @@ app.post("/storeBookmark", async (req, res) => {
       } else {
         res
           .status(201)
-          .json({ message: "Bookmark stored successfully", data: data });
+          .json({ message: "Bookmark stored successfully" });
       }
     },
   );
