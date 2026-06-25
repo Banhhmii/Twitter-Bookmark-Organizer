@@ -80,16 +80,11 @@ app.post("/storeBookmark", async (req, res) => {
 app.get("/filterBookmarks", async (req, res) => {
   const filterTag = req.query.tag;
   try {
-    const { data, error } = await supabase
-      .from("Twitter-Bookmarks")
-      .select("*")
-      .ilike("tag", `%${filterTag}%`);
-    if (error) {
-      console.error("Error filtering bookmarks:", error);
-      res.status(500).json({ error: "Failed to filter bookmarks" });
-    } else {
-      res.status(200).json({ bookmarks: data });
-    }
+    const result = await pool.query(
+      'SELECT * FROM "Twitter-Bookmarks" WHERE LOWER(tag) = LOWER($1)',
+      [filterTag],
+    );
+    res.status(200).json({ bookmarks: result.rows });
   } catch (error) {
     console.error("Error filtering bookmarks:", error);
     res.status(500).json({ error: "Failed to filter bookmarks" });
