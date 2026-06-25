@@ -1,11 +1,8 @@
 const storeBookmark = async (req, res) => {
   event.preventDefault();
-  const bookmarkUrl = document.getElementById('bookmarkURL').value;
+  const url = document.getElementById('bookmarkURL').value;
   const tag = document.getElementById('tag').value;
-  const {url , tag} = {
-    url: bookmarkUrl,
-    tag: tag|| null,
-  };
+
   try {
     const response = await fetch('/storeBookmark', {
       method: 'POST',
