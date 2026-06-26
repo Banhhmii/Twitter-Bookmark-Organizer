@@ -63,9 +63,38 @@ const registerUser = async () => {
     console.error("Error registering user:", error);
   }
 }
+
+const loginUser = async () => {
+  event.preventDefault();
+  const username = document.getElementById('username').value;
+  const password = document.getElementById('password').value;
+
+  try {
+    const response = await fetch('/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ username: username, password: password })
+    });
+    const data = await response.json();
+    if (response.ok) {
+      alert(data.message);
+      // Store the token in localStorage or a cookie
+      localStorage.setItem('authToken', data.token);
+    } else {
+      alert(data.error);
+    }
+  } catch (error) {
+    console.error("Error logging in:", error);
+  }
+}
+
 const bookmarkForm = document.getElementById('bookmarkForm');
 const filterForm = document.getElementById('filterForm');
 const registerForm = document.getElementById('registerForm');
+const loginForm = document.getElementById('loginForm');
+
 
 if (bookmarkForm) {
   bookmarkForm.addEventListener('submit', storeBookmark);
@@ -79,3 +108,6 @@ if (registerForm) {
   registerForm.addEventListener('submit', registerUser);
 }
 
+if (loginForm) {
+  loginForm.addEventListener('submit', loginUser);
+}
