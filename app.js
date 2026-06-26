@@ -1,9 +1,12 @@
 const express = require("express");
-// const supabase = require('./supabaseClient.js');
 const dotenv = require("dotenv");
 dotenv.config();
 const { Pool } = require("pg");
 const fs = require("fs");
+const pg = require("knex")({
+  client: "pg",
+  connection: process.env.PG_CONNECTION_STRING,
+})
 
 const pool = new Pool({
   connectionString: process.env.PG_CONNECTION_STRING,
@@ -60,21 +63,17 @@ app.get("/styles.css", (req, res) => {
 
 app.post("/storeBookmark", async (req, res) => {
   const bookmark = req.body;
-  const { bookmarkUrl, tag} = bookmark;
-  pool.query(
-    'INSERT INTO "Twitter-Bookmarks" (url, tag) VALUES ($1, $2) RETURNING *',
-    [bookmarkUrl, tag],
-    (error, result) => {
-      if (error) {
-        console.error("Error storing bookmark:", error);
-        res.status(500).json({ error: "Failed to store bookmark" });
-      } else {
-        res
-          .status(201)
-          .json({ message: "Bookmark stored successfully" });
-      }
-    },
-  );
+  const { url, tag} = bookmark;
+  try{
+    const result = await pool.query(
+      'INSERT INTO "Twitter-Bookmarks" (url, tag) VALUES ($1, $2) RETURNING *',
+      [url, tag]
+    );
+    res.status(201).json({ message: "Bookmark stored successfully"});
+  } catch (error) {
+    console.error("Error storing bookmark:", error);
+    res.status(500).json({ error: "Failed to store bookmark" });
+  }
 });
 
 app.get("/filterBookmarks", async (req, res) => {
