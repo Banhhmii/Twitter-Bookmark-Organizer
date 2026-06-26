@@ -7,7 +7,7 @@ exports.up = function(knex) {
     table.increments("id").primary();
     table.string("url").notNullable().unique();
     table.string("tag").notNullable();
-    table.integer("user_id").unsigned().notNullable();
+    table.integer("user_id").unsigned().notNullable().references("id").inTable("users").onDelete("CASCADE");
     table.timestamp("created_at", { useTz: true }).notNullable().defaultTo(knex.fn.now());
   }).then(() => {
     console.log("Bookmarks table created successfully");
