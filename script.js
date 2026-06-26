@@ -38,8 +38,44 @@ const filterBookmarks = async () => {
   } catch (error) {
     console.error("Error filtering bookmarks:", error);
   }
-
 }
 
-document.getElementById('bookmarkForm').addEventListener('submit', storeBookmark);
-document.getElementById('filterForm').addEventListener('submit', filterBookmarks);
+const registerUser = async () => {
+  event.preventDefault();
+  const username = document.getElementById('username').value;
+  const password = document.getElementById('password').value;
+
+  try {
+    const response = await fetch('/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ username: username, password: password })
+    });
+    const data = await response.json();
+    if (response.ok) {
+      alert(data.message);
+    } else {
+      alert(data.error);
+    }
+  } catch (error) {
+    console.error("Error registering user:", error);
+  }
+}
+const bookmarkForm = document.getElementById('bookmarkForm');
+const filterForm = document.getElementById('filterForm');
+const registerForm = document.getElementById('registerForm');
+
+if (bookmarkForm) {
+  bookmarkForm.addEventListener('submit', storeBookmark);
+}
+
+if (filterForm) {
+  filterForm.addEventListener('submit', filterBookmarks);
+}
+
+if (registerForm) {
+  registerForm.addEventListener('submit', registerUser);
+}
+
