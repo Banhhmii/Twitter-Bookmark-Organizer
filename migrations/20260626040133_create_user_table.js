@@ -18,7 +18,7 @@ exports.up = function(knex) {
  * @returns { Promise<void> }
  */
 exports.down = function(knex) {
-    return knex.schema.dropTableIfExists("Users").then(() => {
+    return knex.schema.dropTableIfExists("users").then(() => {
         console.log("Users table dropped successfully");
    });
 };

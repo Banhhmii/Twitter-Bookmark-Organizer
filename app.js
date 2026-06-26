@@ -66,7 +66,7 @@ app.post("/storeBookmark", async (req, res) => {
   const { url, tag} = bookmark;
   try{
     const result = await pool.query(
-      'INSERT INTO "Twitter-Bookmarks" (url, tag) VALUES ($1, $2) RETURNING *',
+      'INSERT INTO "bookmarks" (url, tag) VALUES ($1, $2) RETURNING *',
       [url, tag]
     );
     res.status(201).json({ message: "Bookmark stored successfully"});
@@ -80,7 +80,7 @@ app.get("/filterBookmarks", async (req, res) => {
   const filterTag = req.query.tag;
   try {
     const result = await pool.query(
-      'SELECT * FROM "Twitter-Bookmarks" WHERE LOWER(tag) = LOWER($1)',
+      'SELECT * FROM "bookmarks" WHERE LOWER(tag) = LOWER($1)',
       [filterTag],
     );
     res.status(200).json({ bookmarks: result.rows });
