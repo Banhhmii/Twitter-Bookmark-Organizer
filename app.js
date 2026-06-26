@@ -2,11 +2,7 @@ const express = require("express");
 const dotenv = require("dotenv");
 dotenv.config();
 const { Pool } = require("pg");
-const fs = require("fs");
-const pg = require("knex")({
-  client: "pg",
-  connection: process.env.PG_CONNECTION_STRING,
-})
+
 
 const pool = new Pool({
   connectionString: process.env.PG_CONNECTION_STRING,
