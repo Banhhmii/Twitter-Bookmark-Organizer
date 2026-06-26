@@ -1,7 +1,8 @@
 const express = require("express");
 const dotenv = require("dotenv");
-const { hashPassword } = require("./utils/passwordHashing");
 dotenv.config();
+const { hashPassword, verifyPassword } = require("./utils/passwordHashing");
+const { generateToken } = require("./middleware/auth");
 const { Pool } = require("pg");
 
 
@@ -73,6 +74,21 @@ app.get("/register", (req, res) => {
   });
 });
 
+app.get("/login", (req, res) => {
+  const options = {
+    root: __dirname + "/views",
+    headers: {
+      "Content-Type": "text/html",
+    },
+  };
+  res.sendFile("login.html", options, (err) => {
+    if (err) {
+      console.error("Error sending login.html:", err);
+      res.status(500).send("Internal Server Error");
+    }
+  });
+});
+
 app.post("/storeBookmark", async (req, res) => {
   const bookmark = req.body;
   const { url, tag} = bookmark;
@@ -114,6 +130,29 @@ app.post("/register", async (req, res) => {
   } catch (error) {
     console.error("Error registering user:", error);
     res.status(500).json({ error: "Failed to register user" });
+  }
+});
+
+app.post("/login", async (req, res) => {
+  const { username, password } = req.body;
+  try {
+    const result = await pool.query(
+      'SELECT * FROM "users" WHERE username = $1',
+      [username.trim()]
+    );
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+    const user = result.rows[0];
+    const isMatch = await verifyPassword(password.trim(), user.password);
+    if (!isMatch) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    } 
+    const token = generateToken({ userId: user.id})
+    res.status(200).json({ message: "Login successful", token: token });
+  } catch (error) {
+    console.error("Error logging in:", error);
+    res.status(500).json({ error: "Failed to login" });
   }
 });
 
