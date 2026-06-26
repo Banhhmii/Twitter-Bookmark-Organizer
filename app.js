@@ -1,5 +1,6 @@
 const express = require("express");
 const dotenv = require("dotenv");
+const { hashPassword } = require("./utils/passwordHashing");
 dotenv.config();
 const { Pool } = require("pg");
 
@@ -14,7 +15,7 @@ app.use(express.json());
 
 app.get("/", (req, res) => {
   const options = {
-    root: __dirname,
+    root: __dirname + "/views",
     headers: {
       "Content-Type": "text/html",
     },
@@ -57,6 +58,21 @@ app.get("/styles.css", (req, res) => {
   });
 });
 
+app.get("/register", (req, res) => {
+  const options = {
+    root: __dirname + "/views",
+    headers: {
+      "Content-Type": "text/html",
+    },
+  };
+  res.sendFile("register.html", options, (err) => {
+    if (err) {
+      console.error("Error sending register.html:", err);
+      res.status(500).send("Internal Server Error");
+    }
+  });
+});
+
 app.post("/storeBookmark", async (req, res) => {
   const bookmark = req.body;
   const { url, tag} = bookmark;
@@ -83,6 +99,21 @@ app.get("/filterBookmarks", async (req, res) => {
   } catch (error) {
     console.error("Error filtering bookmarks:", error);
     res.status(500).json({ error: "Failed to filter bookmarks" });
+  }
+});
+
+app.post("/register", async (req, res) => {
+  const { username, password } = req.body;
+  const securePassword = await hashPassword(password.trim());
+  try {
+    const result = await pool.query(
+      'INSERT INTO "users" (username, password) VALUES ($1, $2) RETURNING *',
+      [username.trim(), securePassword]
+    );
+    res.status(201).json({ message: "User registered successfully" });
+  } catch (error) {
+    console.error("Error registering user:", error);
+    res.status(500).json({ error: "Failed to register user" });
   }
 });
 
