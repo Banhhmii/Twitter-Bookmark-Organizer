@@ -7,7 +7,8 @@ const storeBookmark = async (req, res) => {
     const response = await fetch('/storeBookmark', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('authToken')}`
       },
       body: JSON.stringify({url, tag})
       })
@@ -21,7 +22,11 @@ const filterBookmarks = async () => {
   const filterTag = document.getElementById('filterInput').value.toLowerCase();
   const filterDisplay = document.getElementById('filterResults');
   try{
-    const response = await fetch(`/filterBookmarks?tag=${filterTag}`);
+    const response = await fetch(`/filterBookmarks?tag=${filterTag}`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+      },
+    });
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     } 
@@ -56,6 +61,7 @@ const registerUser = async () => {
     const data = await response.json();
     if (response.ok) {
       alert(data.message);
+      window.location.href = "/login";
     } else {
       alert(data.error);
     }
@@ -77,11 +83,12 @@ const loginUser = async () => {
       },
       body: JSON.stringify({ username: username, password: password })
     });
-    const data = await response.json();
     if (response.ok) {
+      const data = await response.json();
       alert(data.message);
       // Store the token in localStorage or a cookie
       localStorage.setItem('authToken', data.token);
+      window.location.href = "/";
     } else {
       alert(data.error);
     }
@@ -89,6 +96,24 @@ const loginUser = async () => {
     console.error("Error logging in:", error);
   }
 }
+
+const getBookmarks = async () => {
+  try {
+    const response = await fetch('/bookmarks', {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+    });
+    const data = await response.json();
+    const bookmarksDisplay = document.getElementById('bookmarksResults');
+    bookmarksDisplay.innerHTML = data.bookmarks.map(bookmark => `
+      <div class="bookmark-card">
+        <p>Tag: ${bookmark.tag || "No tag"}</p>
+        <a href="${bookmark.url}" target="_blank">${bookmark.url}</a>
+      </div>
+    `).join('');
+  } catch (error) {
+    console.error("Error retrieving bookmarks:", error);
+  }
+};
 
 const bookmarkForm = document.getElementById('bookmarkForm');
 const filterForm = document.getElementById('filterForm');
@@ -110,4 +135,9 @@ if (registerForm) {
 
 if (loginForm) {
   loginForm.addEventListener('submit', loginUser);
+}
+
+const bookmarksBtn = document.getElementById('bookmarksBtn');
+if (bookmarksBtn) {
+  bookmarksBtn.addEventListener('click', getBookmarks);
 }
