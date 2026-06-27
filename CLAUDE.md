@@ -1,30 +1,50 @@
 # CLAUDE.md
 
-Twitter bookmark organizer — a flat-file Express 5 server backed by PostgreSQL,
-with Knex used exclusively for schema migrations. First portfolio project, actively
-working toward MVP.
+Twitter Bookmark Organizer — Express 5 server backed by PostgreSQL, with JWT-based
+user auth. Users register, log in, then store/filter bookmarks. Knex is used
+exclusively for schema migrations; `pg.Pool` handles all runtime queries.
+
+## MVP target
+
+Three authenticated bookmark endpoints, all scoped to `req.user.userId`:
+- `POST /storeBookmark` — store a bookmark (url + tag) for the logged-in user
+- `GET /filterBookmarks?tag=<tag>` — return the logged-in user's bookmarks matching a tag
+- `GET /bookmarks` — return all bookmarks for the logged-in user
+
+Remaining work before MVP is complete:
+- Add `user_id` to the `/storeBookmark` INSERT (currently missing — will fail with constraint error)
+- Input validation on all write endpoints (return 400 before any DB call)
+- Centralized error handling middleware (separate file, not inline per-route)
+- Rate limiting on auth endpoints (`/register`, `/login`)
+- Test suite (none exists yet)
+
+Frontend is intentionally minimal — this is a backend portfolio project.
 
 ## Project structure
 
-- `app.js` — single-file Express server; all routes live here; DB queries use `pg.Pool` directly
+- `app.js` — all routes and DB queries; single file, no splitting
+- `middleware/auth.js` — `generateToken` (JWT sign) and `authenticateUser` (JWT verify middleware)
+- `utils/passwordHashing.js` — bcrypt `hashPassword` / `verifyPassword` helpers
 - `migrations/` — Knex migration files; schema changes happen here, never in `app.js`
 - `knexfile.js` — Knex config for migrations only; not imported by the app at runtime
-- `index.html`, `script.js`, `styles.css` — frontend; served as static files via Express
-- `supabaseClient.js` — currently unused; do not import into `app.js`
+- `views/` — HTML pages served by Express (`index.html`, `login.html`, `register.html`)
+- `script.js` — frontend fetch handlers; attaches to form submit events
+- `supabaseClient.js` — unused; do not import
 
 ## Commands
 
 - Start server: `node app.js`
 - Run migrations: `npx knex migrate:latest`
 - Roll back: `npx knex migrate:rollback`
-- No test suite configured
+- No test suite — verify by starting the server and hitting endpoints manually
 
 ## Conventions
 
 - CommonJS throughout (`require`/`module.exports`) — do not use ESM `import`
 - `async/await` with try/catch in all route handlers
-- DB queries use `pg.Pool` + parameterized SQL (`$1`, `$2`) — Knex query builder is never used at runtime
-- `dotenv.config()` must be called before any `process.env` access — already wired in `app.js` and `knexfile.js`
+- DB queries use `pool.query()` with parameterized SQL (`$1`, `$2`) — Knex query builder is never used at runtime
+- `dotenv.config()` must be the first call in any file that reads `process.env`
+- JWT tokens expire in 15 min; stored in `localStorage` on the frontend as `authToken`; sent as `Authorization: Bearer <token>`; `authenticateUser` middleware populates `req.user` with the decoded payload
 
 ## Behavioral guidelines
 
@@ -32,23 +52,22 @@ working toward MVP.
 and `pg.Pool` (runtime queries) — that look interchangeable but are not. If a request is ambiguous
 about which to use, ask rather than guess.
 
-**Simplicity first.** This is a learning project in a single file working toward MVP. Don't split
-routes into separate files, add middleware layers, or create a service layer unless explicitly asked.
-Get features working first.
+**Simplicity first.** Single-file server, no test suite, working toward MVP. Don't split
+routes, add middleware layers, or create service abstractions unless explicitly asked.
 
 **Surgical changes.** Edit only what the request requires. Don't reformat `app.js`, reorganize
-imports, or clean up unused code without being asked.
+imports, or clean up adjacent code without being asked.
 
-**Goal-driven execution.** No tests exist — verify changes by starting the server (`node app.js`)
+**Goal-driven execution.** No tests exist — verify by starting the server (`node app.js`)
 and hitting the relevant endpoint. State what request/response you'll use to confirm before implementing.
 
-**Learning context.** When making non-obvious changes, briefly explain *why* — one sentence is enough.
-This helps build understanding, not just working code.
+**Learning context.** When making non-obvious changes, explain *why* in one sentence.
 
 ## Project-specific rules
 
 - **Never use Knex query builder in `app.js`** — Knex is migrations only; runtime queries use `pool.query()` with parameterized SQL
-- **`bookmarks` requires `user_id`** — the migration marks it `notNullable()`; any INSERT into `bookmarks` must supply `user_id` or it will throw a DB constraint error (blocked until auth is implemented)
-- **Validate input before querying** — write endpoints should check required fields exist and return 400 before any DB call
+- **`bookmarks` requires `user_id`** — the migration marks it `notNullable()`; any INSERT must supply `req.user.userId` or it will throw a DB constraint error
+- **Validate input before `.trim()` or any DB call** — `undefined.trim()` throws a TypeError that escapes the try/catch; check fields exist first and return 400
+- **Protected routes need `Authorization: Bearer <token>`** — `script.js` must read `localStorage.getItem('authToken')` and attach it; `authenticateUser` returns 401 if the header is missing
 - **Every migration needs a working `down()`** — migrations run against a live Supabase instance; rollback must work
-- **Don't add `supabaseClient` or `fs`** — both are unused; `fs@0.0.1-security` is a stub package
+- **Don't use `supabaseClient.js`** — it's unused; don't import it into `app.js`

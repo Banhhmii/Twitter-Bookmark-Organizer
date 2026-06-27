@@ -2,7 +2,7 @@ const express = require("express");
 const dotenv = require("dotenv");
 dotenv.config();
 const { hashPassword, verifyPassword } = require("./utils/passwordHashing");
-const { generateToken } = require("./middleware/auth");
+const { generateToken, authenticateUser } = require("./middleware/auth");
 const { Pool } = require("pg");
 
 
@@ -89,13 +89,14 @@ app.get("/login", (req, res) => {
   });
 });
 
-app.post("/storeBookmark", async (req, res) => {
+app.post("/storeBookmark", authenticateUser, async (req, res) => {
   const bookmark = req.body;
   const { url, tag} = bookmark;
+  const userId = req.user.userId; // Assuming the token contains a userId field
   try{
     const result = await pool.query(
-      'INSERT INTO "bookmarks" (url, tag) VALUES ($1, $2) RETURNING *',
-      [url, tag]
+      'INSERT INTO "bookmarks" (url, tag, user_id) VALUES ($1, $2, $3) RETURNING *',
+      [url, tag, userId]
     );
     res.status(201).json({ message: "Bookmark stored successfully"});
   } catch (error) {
@@ -104,7 +105,7 @@ app.post("/storeBookmark", async (req, res) => {
   }
 });
 
-app.get("/filterBookmarks", async (req, res) => {
+app.get("/filterBookmarks", authenticateUser, async (req, res) => {
   const filterTag = req.query.tag;
   try {
     const result = await pool.query(
@@ -115,6 +116,19 @@ app.get("/filterBookmarks", async (req, res) => {
   } catch (error) {
     console.error("Error filtering bookmarks:", error);
     res.status(500).json({ error: "Failed to filter bookmarks" });
+  }
+});
+
+app.get("/bookmarks", authenticateUser, async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM "bookmarks" WHERE user_id = $1',
+      [req.user.userId]
+    );
+    res.status(200).json({ bookmarks: result.rows });
+  } catch (error) {
+    console.error("Error retrieving bookmarks:", error);
+    res.status(500).json({ error: "Failed to retrieve bookmarks" });
   }
 });
 
