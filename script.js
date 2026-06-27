@@ -44,6 +44,23 @@ const filterBookmarks = async () => {
     console.error("Error filtering bookmarks:", error);
   }
 }
+const getBookmarks = async () => {
+  try {
+    const response = await fetch('/bookmarks', {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+    });
+    const data = await response.json();
+    const bookmarksDisplay = document.getElementById('bookmarksResults');
+    bookmarksDisplay.innerHTML = data.bookmarks.map(bookmark => `
+      <div class="bookmark-card">
+        <p>Tag: ${bookmark.tag || "No tag"}</p>
+        <a href="${bookmark.url}" target="_blank">${bookmark.url}</a>
+      </div>
+    `).join('');
+  } catch (error) {
+    console.error("Error retrieving bookmarks:", error);
+  }
+};
 
 const registerUser = async () => {
   event.preventDefault();
@@ -96,24 +113,6 @@ const loginUser = async () => {
     console.error("Error logging in:", error);
   }
 }
-
-const getBookmarks = async () => {
-  try {
-    const response = await fetch('/bookmarks', {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
-    });
-    const data = await response.json();
-    const bookmarksDisplay = document.getElementById('bookmarksResults');
-    bookmarksDisplay.innerHTML = data.bookmarks.map(bookmark => `
-      <div class="bookmark-card">
-        <p>Tag: ${bookmark.tag || "No tag"}</p>
-        <a href="${bookmark.url}" target="_blank">${bookmark.url}</a>
-      </div>
-    `).join('');
-  } catch (error) {
-    console.error("Error retrieving bookmarks:", error);
-  }
-};
 
 const bookmarkForm = document.getElementById('bookmarkForm');
 const filterForm = document.getElementById('filterForm');

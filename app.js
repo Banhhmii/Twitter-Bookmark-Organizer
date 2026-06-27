@@ -4,9 +4,9 @@ dotenv.config();
 const { hashPassword, verifyPassword } = require("./utils/passwordHashing");
 const { generateToken, authenticateUser } = require("./middleware/auth");
 const { validateLogin, validateBookmark } = require("./middleware/inputValidation");
-const { rateLimiter } = require("./middleware/rateLimiter");
+const { rateLimiter, authLimiter } = require("./middleware/rateLimiter");
 const { errorHandler } = require("./middleware/errorHandling");
-const { AuthError } = require("./utils/appError");
+const { AuthError, ConflictError } = require("./utils/appError");
 const { Pool } = require("pg");
 
 
@@ -134,7 +134,7 @@ app.get("/bookmarks", authenticateUser, rateLimiter, async (req, res, next) => {
   }
 });
 
-app.post("/register", validateLogin, rateLimiter, async (req, res, next) => {
+app.post("/register", validateLogin, authLimiter, async (req, res, next) => {
   const { username, password } = req.body;
   try {
     const securePassword = await hashPassword(password.trim());
@@ -144,11 +144,12 @@ app.post("/register", validateLogin, rateLimiter, async (req, res, next) => {
     );
     res.status(201).json({ message: "User registered successfully" });
   } catch (error) {
+    if (error.code === '23505') return next(new ConflictError('Username already taken'));
     next(error);
   }
 });
 
-app.post("/login", validateLogin, rateLimiter, async (req, res, next) => {
+app.post("/login", validateLogin, authLimiter, async (req, res, next) => {
   const { username, password } = req.body;
   try {
     const result = await pool.query(
