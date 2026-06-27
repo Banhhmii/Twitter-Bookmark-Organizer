@@ -3,6 +3,9 @@ const dotenv = require("dotenv");
 dotenv.config();
 const { hashPassword, verifyPassword } = require("./utils/passwordHashing");
 const { generateToken, authenticateUser } = require("./middleware/auth");
+const { validateLogin, validateBookmark } = require("./middleware/inputValidation");
+const { errorHandler } = require("./middleware/errorHandling");
+const { AuthError } = require("./utils/appError");
 const { Pool } = require("pg");
 
 
@@ -89,7 +92,7 @@ app.get("/login", (req, res) => {
   });
 });
 
-app.post("/storeBookmark", authenticateUser, async (req, res) => {
+app.post("/storeBookmark", authenticateUser, validateBookmark, async (req, res) => {
   const bookmark = req.body;
   const { url, tag} = bookmark;
   const userId = req.user.userId;
@@ -100,8 +103,7 @@ app.post("/storeBookmark", authenticateUser, async (req, res) => {
     );
     res.status(201).json({ message: "Bookmark stored successfully"});
   } catch (error) {
-    console.error("Error storing bookmark:", error);
-    res.status(500).json({ error: "Failed to store bookmark" });
+    next(error);
   }
 });
 
@@ -115,8 +117,7 @@ app.get("/filterBookmarks", authenticateUser, async (req, res) => {
     );
     res.status(200).json({ bookmarks: result.rows });
   } catch (error) {
-    console.error("Error filtering bookmarks:", error);
-    res.status(500).json({ error: "Failed to filter bookmarks" });
+    next(error);
   }
 });
 
@@ -128,27 +129,25 @@ app.get("/bookmarks", authenticateUser, async (req, res) => {
     );
     res.status(200).json({ bookmarks: result.rows });
   } catch (error) {
-    console.error("Error retrieving bookmarks:", error);
-    res.status(500).json({ error: "Failed to retrieve bookmarks" });
+    next(error);
   }
 });
 
-app.post("/register", async (req, res) => {
+app.post("/register", validateLogin, async (req, res) => {
   const { username, password } = req.body;
-  const securePassword = await hashPassword(password.trim());
   try {
+    const securePassword = await hashPassword(password.trim());
     const result = await pool.query(
       'INSERT INTO "users" (username, password) VALUES ($1, $2) RETURNING *',
       [username.trim(), securePassword]
     );
     res.status(201).json({ message: "User registered successfully" });
   } catch (error) {
-    console.error("Error registering user:", error);
-    res.status(500).json({ error: "Failed to register user" });
+    next(error);
   }
 });
 
-app.post("/login", async (req, res) => {
+app.post("/login", validateLogin, async (req, res) => {
   const { username, password } = req.body;
   try {
     const result = await pool.query(
@@ -156,20 +155,21 @@ app.post("/login", async (req, res) => {
       [username.trim()]
     );
     if (result.rows.length === 0) {
-      return res.status(401).json({ error: "Invalid credentials" });
+      return next(new AuthError('Invalid credentials'));
     }
     const user = result.rows[0];
     const isMatch = await verifyPassword(password.trim(), user.password);
     if (!isMatch) {
-      return res.status(401).json({ error: "Invalid credentials" });
-    } 
-    const token = generateToken({ userId: user.id})
+      return next(new AuthError('Invalid credentials'));
+    }
+    const token = generateToken({ userId: user.id });
     res.status(200).json({ message: "Login successful", token: token });
   } catch (error) {
-    console.error("Error logging in:", error);
-    res.status(500).json({ error: "Failed to login" });
+    next(error);
   }
 });
+
+app.use(errorHandler);
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
