@@ -93,7 +93,7 @@ app.get("/login", (req, res) => {
   });
 });
 
-app.post("/storeBookmark", authenticateUser, validateBookmark, rateLimiter, async (req, res) => {
+app.post("/storeBookmark", authenticateUser, validateBookmark, rateLimiter, async (req, res, next) => {
   const bookmark = req.body;
   const { url, tag} = bookmark;
   const userId = req.user.userId;
@@ -108,7 +108,7 @@ app.post("/storeBookmark", authenticateUser, validateBookmark, rateLimiter, asyn
   }
 });
 
-app.get("/filterBookmarks", authenticateUser, rateLimiter, async (req, res) => {
+app.get("/filterBookmarks", authenticateUser, rateLimiter, async (req, res, next) => {
   const filterTag = req.query.tag;
   const userId = req.user.userId;
   try {
@@ -122,7 +122,7 @@ app.get("/filterBookmarks", authenticateUser, rateLimiter, async (req, res) => {
   }
 });
 
-app.get("/bookmarks", authenticateUser, rateLimiter, async (req, res) => {
+app.get("/bookmarks", authenticateUser, rateLimiter, async (req, res, next) => {
   try {
     const result = await pool.query(
       'SELECT * FROM "bookmarks" WHERE user_id = $1',
@@ -134,7 +134,7 @@ app.get("/bookmarks", authenticateUser, rateLimiter, async (req, res) => {
   }
 });
 
-app.post("/register", validateLogin, rateLimiter, async (req, res) => {
+app.post("/register", validateLogin, rateLimiter, async (req, res, next) => {
   const { username, password } = req.body;
   try {
     const securePassword = await hashPassword(password.trim());
@@ -148,7 +148,7 @@ app.post("/register", validateLogin, rateLimiter, async (req, res) => {
   }
 });
 
-app.post("/login", validateLogin, rateLimiter, async (req, res) => {
+app.post("/login", validateLogin, rateLimiter, async (req, res, next) => {
   const { username, password } = req.body;
   try {
     const result = await pool.query(
