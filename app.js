@@ -92,7 +92,7 @@ app.get("/login", (req, res) => {
 app.post("/storeBookmark", authenticateUser, async (req, res) => {
   const bookmark = req.body;
   const { url, tag} = bookmark;
-  const userId = req.user.userId; // Assuming the token contains a userId field
+  const userId = req.user.userId;
   try{
     const result = await pool.query(
       'INSERT INTO "bookmarks" (url, tag, user_id) VALUES ($1, $2, $3) RETURNING *',
@@ -107,10 +107,11 @@ app.post("/storeBookmark", authenticateUser, async (req, res) => {
 
 app.get("/filterBookmarks", authenticateUser, async (req, res) => {
   const filterTag = req.query.tag;
+  const userId = req.user.userId;
   try {
     const result = await pool.query(
-      'SELECT * FROM "bookmarks" WHERE LOWER(tag) = LOWER($1)',
-      [filterTag],
+      'SELECT * FROM "bookmarks" WHERE LOWER(tag) = LOWER($1) and user_id = $2',
+      [filterTag, userId]
     );
     res.status(200).json({ bookmarks: result.rows });
   } catch (error) {
