@@ -4,6 +4,7 @@ dotenv.config();
 const { hashPassword, verifyPassword } = require("./utils/passwordHashing");
 const { generateToken, authenticateUser } = require("./middleware/auth");
 const { validateLogin, validateBookmark } = require("./middleware/inputValidation");
+const { rateLimiter } = require("./middleware/rateLimiter");
 const { errorHandler } = require("./middleware/errorHandling");
 const { AuthError } = require("./utils/appError");
 const { Pool } = require("pg");
@@ -92,7 +93,7 @@ app.get("/login", (req, res) => {
   });
 });
 
-app.post("/storeBookmark", authenticateUser, validateBookmark, async (req, res) => {
+app.post("/storeBookmark", authenticateUser, validateBookmark, rateLimiter, async (req, res) => {
   const bookmark = req.body;
   const { url, tag} = bookmark;
   const userId = req.user.userId;
@@ -107,7 +108,7 @@ app.post("/storeBookmark", authenticateUser, validateBookmark, async (req, res) 
   }
 });
 
-app.get("/filterBookmarks", authenticateUser, async (req, res) => {
+app.get("/filterBookmarks", authenticateUser, rateLimiter, async (req, res) => {
   const filterTag = req.query.tag;
   const userId = req.user.userId;
   try {
@@ -121,7 +122,7 @@ app.get("/filterBookmarks", authenticateUser, async (req, res) => {
   }
 });
 
-app.get("/bookmarks", authenticateUser, async (req, res) => {
+app.get("/bookmarks", authenticateUser, rateLimiter, async (req, res) => {
   try {
     const result = await pool.query(
       'SELECT * FROM "bookmarks" WHERE user_id = $1',
@@ -133,7 +134,7 @@ app.get("/bookmarks", authenticateUser, async (req, res) => {
   }
 });
 
-app.post("/register", validateLogin, async (req, res) => {
+app.post("/register", validateLogin, rateLimiter, async (req, res) => {
   const { username, password } = req.body;
   try {
     const securePassword = await hashPassword(password.trim());
@@ -147,7 +148,7 @@ app.post("/register", validateLogin, async (req, res) => {
   }
 });
 
-app.post("/login", validateLogin, async (req, res) => {
+app.post("/login", validateLogin, rateLimiter, async (req, res) => {
   const { username, password } = req.body;
   try {
     const result = await pool.query(
