@@ -1,10 +1,16 @@
 {
   "dependencies": {
     "@supabase/supabase-js": "^2.105.4",
+    "bcrypt": "^6.0.0",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "fs": "^0.0.1-security",
+    "express-rate-limit": "^8.5.2",
+    "express-validator": "^7.3.2",
+    "jsonwebtoken": "^9.0.3",
     "knex": "^3.2.10",
     "pg": "^8.22.0"
+  },
+  "allowScripts": {
+    "bcrypt@6.0.0": true
   }
 }
