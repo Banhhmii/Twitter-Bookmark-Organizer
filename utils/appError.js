@@ -26,4 +26,11 @@ class NotFoundError extends AppError {
   }
 }
 
-module.exports = { ValidationError, AuthError, NotFoundError };
+class ConflictError extends AppError {
+  constructor(message) {
+    super(message, 409);
+    this.name = 'ConflictError';
+  }
+}
+
+module.exports = { ValidationError, AuthError, NotFoundError, ConflictError };
