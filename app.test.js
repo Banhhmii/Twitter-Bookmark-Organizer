@@ -5,13 +5,18 @@ let token;
 
 beforeAll(async () => {
   // Set up the database or any necessary preconditions here
-  const response = await request(app)
+  await request(app)
+    .post("/register")
+    .send({ username: "testuser", password: "testuserpassword" });
+const response = await request(app)
     .post("/login")
     .send({ username: "testuser", password: "testuserpassword" });
     token = response.body.token; // Store the token for use in tests
 });
 
 afterAll(async () => {
+  // Clean up the database or any necessary postconditions here
+  await pool.query('DELETE FROM "users" WHERE username = $1', ["testuser"]);
   await pool.query('DELETE FROM "bookmarks" WHERE url = $1', ["https://example.com"]);
   await pool.end();
 });
