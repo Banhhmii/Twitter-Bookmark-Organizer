@@ -62,6 +62,7 @@ app.get("/styles.css", (req, res) => {
   });
 });
 
+
 app.get("/register", (req, res) => {
   const options = {
     root: __dirname + "/views",
@@ -87,6 +88,21 @@ app.get("/login", (req, res) => {
   res.sendFile("login.html", options, (err) => {
     if (err) {
       console.error("Error sending login.html:", err);
+      res.status(500).send("Internal Server Error");
+    }
+  });
+});
+
+app.get("/home", (req, res) => {
+  const options = {
+    root: __dirname + "/views",
+    headers: {
+      "Content-Type": "text/html",
+    },
+  };
+  res.sendFile("index.html", options, (err) => {
+    if (err) {
+      console.error("Error sending index.html:", err);
       res.status(500).send("Internal Server Error");
     }
   });

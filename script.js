@@ -105,7 +105,7 @@ const loginUser = async () => {
       alert(data.message);
       // Store the token in localStorage or a cookie
       localStorage.setItem('authToken', data.token);
-      window.location.href = "/";
+      window.location.href = "/home";
     } else {
       alert(data.error);
     }
