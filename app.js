@@ -3,7 +3,7 @@ const dotenv = require("dotenv");
 dotenv.config();
 const { hashPassword, verifyPassword } = require("./utils/passwordHashing");
 const { generateToken, authenticateUser } = require("./middleware/auth");
-const { validateLogin, validateBookmark } = require("./middleware/inputValidation");
+const { validateLogin, validateBookmark, validateFilter } = require("./middleware/inputValidation");
 const { rateLimiter, authLimiter } = require("./middleware/rateLimiter");
 const { errorHandler } = require("./middleware/errorHandling");
 const { AuthError, ConflictError } = require("./utils/appError");
@@ -92,7 +92,7 @@ app.get("/login", (req, res) => {
   });
 });
 
-app.post("/storeBookmark", authenticateUser, validateBookmark, rateLimiter, async (req, res, next) => {
+app.post("/storeBookmark", rateLimiter, authenticateUser, validateBookmark, async (req, res, next) => {
   const bookmark = req.body;
   const { url, tag} = bookmark;
   const userId = req.user.userId;
@@ -107,7 +107,7 @@ app.post("/storeBookmark", authenticateUser, validateBookmark, rateLimiter, asyn
   }
 });
 
-app.get("/filterBookmarks", authenticateUser, rateLimiter, async (req, res, next) => {
+app.get("/filterBookmarks", rateLimiter, authenticateUser, validateFilter, async (req, res, next) => {
   const filterTag = req.query.tag;
   const userId = req.user.userId;
   try {
@@ -121,7 +121,7 @@ app.get("/filterBookmarks", authenticateUser, rateLimiter, async (req, res, next
   }
 });
 
-app.get("/bookmarks", authenticateUser, rateLimiter, async (req, res, next) => {
+app.get("/bookmarks", rateLimiter, authenticateUser, async (req, res, next) => {
   try {
     const result = await pool.query(
       'SELECT * FROM "bookmarks" WHERE user_id = $1',
@@ -133,7 +133,7 @@ app.get("/bookmarks", authenticateUser, rateLimiter, async (req, res, next) => {
   }
 });
 
-app.post("/register", validateLogin, authLimiter, async (req, res, next) => {
+app.post("/register", authLimiter, validateLogin, async (req, res, next) => {
   const { username, password } = req.body;
   try {
     const securePassword = await hashPassword(password.trim());
@@ -148,7 +148,7 @@ app.post("/register", validateLogin, authLimiter, async (req, res, next) => {
   }
 });
 
-app.post("/login", validateLogin, authLimiter, async (req, res, next) => {
+app.post("/login", authLimiter, validateLogin, async (req, res, next) => {
   const { username, password } = req.body;
   try {
     const result = await pool.query(

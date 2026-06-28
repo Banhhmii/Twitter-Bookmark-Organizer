@@ -58,7 +58,21 @@ const validateBookmark = [
     validationErrors
 ];
 
+const validateFilter = [
+    body('tag')
+    .exists()
+    .withMessage('Tag is required')
+    .escape()
+    .isString()
+    .withMessage('Tag must be a string')
+    .notEmpty()
+    .withMessage('Tag cannot be empty'),
+
+    validationErrors
+];
+
 module.exports = {
     validateLogin,
-    validateBookmark
+    validateBookmark,
+    validateFilter
 };
