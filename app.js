@@ -24,9 +24,9 @@ app.get("/", (req, res) => {
       "Content-Type": "text/html",
     },
   };
-  res.sendFile("index.html", options, (err) => {
+  res.sendFile("register.html", options, (err) => {
     if (err) {
-      console.error("Error sending index.html:", err);
+      console.error("Error sending register.html:", err);
       res.status(500).send("Internal Server Error");
     }
   });
