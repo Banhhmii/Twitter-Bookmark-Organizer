@@ -1,6 +1,20 @@
 const request = require("supertest");
-const { app } = require("./app");
-const { generateToken } = require("./middleware/auth");
+const { app, pool } = require("./app");
+
+let token;
+
+beforeAll(async () => {
+  // Set up the database or any necessary preconditions here
+  const response = await request(app)
+    .post("/login")
+    .send({ username: "testuser", password: "testuserpassword" });
+    token = response.body.token; // Store the token for use in tests
+});
+
+afterAll(async () => {
+  await pool.query('DELETE FROM "bookmarks" WHERE url = $1', ["https://example.com"]);
+  await pool.end();
+});
 
 describe("POST /register Input Validation", () => {
   it("should return 400 when username is missing", async () => {
@@ -81,7 +95,6 @@ describe("GET /bookmarks Authentication", () => {
   });
 
   it("should return 200 and a list of bookmarks when a valid token is provided", async () => {
-    const token = generateToken({ userId: 1 });
     const response = await request(app)
       .get("/bookmarks")
       .set("Authorization", `Bearer ${token}`);
@@ -116,7 +129,6 @@ describe("POST /storeBookmark Authentication", () => {
   });
 
   it("should return 400 when url is missing", async () => {
-    const token = generateToken({ userId: 1 });
     const response = await request(app)
       .post("/storeBookmark")
       .set("Authorization", `Bearer ${token}`)
@@ -129,7 +141,6 @@ describe("POST /storeBookmark Authentication", () => {
   });
 
   it("should return 201 when a valid bookmark is stored", async () => {
-    const token = generateToken({ userId: 1 });
     const response = await request(app)
       .post("/storeBookmark")
       .set("Authorization", `Bearer ${token}`)
@@ -163,7 +174,6 @@ describe("GET /filterBookmarks Authentication", () => {
   });
 
   it("should return 200 and filtered bookmarks when a valid token is provided", async () => {
-    const token = generateToken({ userId: 1 });
     const response = await request(app)
       .get("/filterBookmarks?tag=tech")
       .set("Authorization", `Bearer ${token}`);

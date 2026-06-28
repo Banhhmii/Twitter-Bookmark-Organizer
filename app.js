@@ -13,7 +13,6 @@ const { Pool } = require("pg");
 const pool = new Pool({
   connectionString: process.env.PG_CONNECTION_STRING,
 });
-const port = 3000;
 
 const app = express();
 app.use(express.json());
@@ -173,6 +172,4 @@ app.post("/login", validateLogin, authLimiter, async (req, res, next) => {
 
 app.use(errorHandler);
 
-module.exports = {
-  app
-}
+module.exports = { app, pool };
