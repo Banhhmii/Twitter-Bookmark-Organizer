@@ -1,4 +1,4 @@
-const { body, validationResult } = require('express-validator');
+const { body, query, validationResult } = require('express-validator');
 const { ValidationError } = require('../utils/appError');
 
 const validationErrors = (req, res, next) => {
@@ -59,7 +59,7 @@ const validateBookmark = [
 ];
 
 const validateFilter = [
-    body('tag')
+    query('tag')
     .exists()
     .withMessage('Tag is required')
     .escape()

@@ -1,54 +1,231 @@
 # Twitter Bookmark Organizer
 
-**A lightweight backend tool to save, tag, and filter Twitter bookmarks.**
+**A REST API for saving, tagging, and filtering Twitter bookmarks — with JWT authentication and PostgreSQL persistence.**
 
 ## The Problem
 
-I needed a way to organize my Twitter bookmarks into specific folders [3]. Twitter's native bookmarking system makes it difficult to categorize links efficiently, causing me to lose track of important resources, tutorials, and threads.
+I needed a way to organize my Twitter bookmarks into specific folders. Twitter's native bookmarking system makes it difficult to categorize links efficiently, causing me to lose track of important resources, tutorials, and threads.
 
 ## The Solution
 
-I built a custom Express backend connected to a Supabase (PostgreSQL) database. It provides a simple UI to submit a Twitter URL and assign it a custom tag in one click. I can then retrieve and filter my database by specific tags to instantly find what I'm looking for.
+A custom Express backend with user accounts and JWT auth. Each user registers, logs in, and gets their own isolated bookmark collection. Bookmarks are stored with a custom tag and can be filtered by tag. Every endpoint is scoped to the authenticated user — no user can access another's bookmarks.
 
 ## Tech Stack
 
-- **Frontend:** HTML, CSS, Vanilla JavaScript [5]
-- **Backend:** Node.js, Express [6]
-- **Database:** Supabase (PostgreSQL) [6]
+- **Runtime:** Node.js
+- **Framework:** Express 5
+- **Database:** PostgreSQL (Supabase), accessed via `pg.Pool`
+- **Auth:** JSON Web Tokens (`jsonwebtoken`), bcrypt password hashing
+- **Validation:** `express-validator`
+- **Rate limiting:** `express-rate-limit`
+- **Testing:** Jest, Supertest
 
+---
 
-### 1. Save a Bookmark
+## API Reference
 
-Saves a new Twitter link and its associated tag to the database.
+All error responses share a consistent shape:
 
-- **Method:** `POST`
-- **URL:** `/bookmarks`
-- **Request Body:**
-  ```json
-  {
-    "url": "https://twitter.com/user/status/12345",
-    "tag": "Algorithms",
-    "created_at": "2026-05-15T00:00:00.000Z"
-  }
-  Success Response (201 Created):
-  ```
+```json
+{ "success": false, "error": "<message>" }
+```
 
-### 2. Filter Bookmarks
-   Retrieves a list of saved bookmarks matching a specific tag.
+Protected routes require an `Authorization` header:
 
-- **Method**: GET  
-  **URL**: /filterBookmarks?tag=[your_tag]  
-  **Success Response**: (200 OK)
+```
+Authorization: Bearer <token>
+```
 
-## Setup Instructions
+---
 
-How to run this project:
+### POST /register
 
-1. Clone this repository down to your local machine.
-2. Run npm install to install dependencies (Express, dotenv, Supabase client).
-3. Create a .env file in the root directory and add your Supabase credentials:
-4. Run node app.js to start the server.
-   Open your browser and navigate to http://localhost:3000.
+Create a new user account.
 
-## What I Learned
-I learned how to use Supabase to store and retrieve data and how to use environment variales to secure my database connections. I also learned how to build my own backend API.
+**Auth required:** No  
+**Rate limit:** 10 requests / 15 minutes
+
+**Request body:**
+
+| Field | Type | Constraints |
+|---|---|---|
+| `username` | string | Min 4 characters |
+| `password` | string | 8–64 characters |
+
+```json
+{ "username": "alice", "password": "securepass123" }
+```
+
+**Responses:**
+
+| Status | Body |
+|---|---|
+| `201 Created` | `{ "message": "User registered successfully" }` |
+| `400 Bad Request` | `{ "success": false, "error": "Username is required" }` |
+| `400 Bad Request` | `{ "success": false, "error": "Password is required" }` |
+| `409 Conflict` | `{ "success": false, "error": "Username already taken" }` |
+| `422 Unprocessable Entity` | `{ "success": false, "error": "Username must be at least 4 characters long" }` |
+| `422 Unprocessable Entity` | `{ "success": false, "error": "Password must be between 8 and 64 characters long" }` |
+| `429 Too Many Requests` | `{ "success": false, "error": "Too many login/register attempts from this IP, please try again after 15 minutes" }` |
+
+---
+
+### POST /login
+
+Authenticate and receive a JWT.
+
+**Auth required:** No  
+**Rate limit:** 10 requests / 15 minutes
+
+**Request body:**
+
+| Field | Type | Constraints |
+|---|---|---|
+| `username` | string | Min 4 characters |
+| `password` | string | 8–64 characters |
+
+```json
+{ "username": "alice", "password": "securepass123" }
+```
+
+**Responses:**
+
+| Status | Body |
+|---|---|
+| `200 OK` | `{ "message": "Login successful", "token": "<jwt>" }` |
+| `400 Bad Request` | `{ "success": false, "error": "Username is required" }` |
+| `400 Bad Request` | `{ "success": false, "error": "Password is required" }` |
+| `401 Unauthorized` | `{ "success": false, "error": "Invalid credentials" }` |
+| `429 Too Many Requests` | `{ "success": false, "error": "Too many login/register attempts from this IP, please try again after 15 minutes" }` |
+
+The JWT expires in **15 minutes**. Include it in subsequent requests as `Authorization: Bearer <token>`.
+
+---
+
+### POST /storeBookmark
+
+Save a new bookmark for the authenticated user.
+
+**Auth required:** Yes (Bearer JWT)  
+**Rate limit:** 100 requests / 15 minutes
+
+**Request body:**
+
+| Field | Type | Constraints |
+|---|---|---|
+| `url` | string | Must be a valid URL |
+| `tag` | string | Required, non-empty |
+
+```json
+{ "url": "https://twitter.com/user/status/12345", "tag": "algorithms" }
+```
+
+**Responses:**
+
+| Status | Body |
+|---|---|
+| `201 Created` | `{ "message": "Bookmark stored successfully" }` |
+| `400 Bad Request` | `{ "success": false, "error": "URL is required" }` |
+| `400 Bad Request` | `{ "success": false, "error": "Tag is required" }` |
+| `401 Unauthorized` | `{ "success": false, "error": "Access token missing" }` |
+| `403 Forbidden` | `{ "success": false, "error": "Invalid access token" }` |
+| `403 Forbidden` | `{ "success": false, "error": "Token expired" }` |
+| `429 Too Many Requests` | `{ "success": false, "error": "Too many requests from this IP, please try again after 15 minutes" }` |
+
+---
+
+### GET /filterBookmarks
+
+Return the authenticated user's bookmarks matching a tag (case-insensitive).
+
+**Auth required:** Yes (Bearer JWT)  
+**Rate limit:** 100 requests / 15 minutes
+
+**Query parameters:**
+
+| Param | Type | Constraints |
+|---|---|---|
+| `tag` | string | Required |
+
+```
+GET /filterBookmarks?tag=algorithms
+```
+
+**Responses:**
+
+| Status | Body |
+|---|---|
+| `200 OK` | `{ "bookmarks": [ { "id": 1, "url": "...", "tag": "algorithms", "user_id": 5 } ] }` |
+| `400 Bad Request` | `{ "success": false, "error": "Tag is required" }` |
+| `401 Unauthorized` | `{ "success": false, "error": "Access token missing" }` |
+| `403 Forbidden` | `{ "success": false, "error": "Invalid access token" }` |
+| `403 Forbidden` | `{ "success": false, "error": "Token expired" }` |
+| `429 Too Many Requests` | `{ "success": false, "error": "Too many requests from this IP, please try again after 15 minutes" }` |
+
+Returns an empty array if no bookmarks match the tag.
+
+---
+
+### GET /bookmarks
+
+Return all bookmarks for the authenticated user.
+
+**Auth required:** Yes (Bearer JWT)  
+**Rate limit:** 100 requests / 15 minutes
+
+```
+GET /bookmarks
+```
+
+**Responses:**
+
+| Status | Body |
+|---|---|
+| `200 OK` | `{ "bookmarks": [ { "id": 1, "url": "...", "tag": "...", "user_id": 5 } ] }` |
+| `401 Unauthorized` | `{ "success": false, "error": "Access token missing" }` |
+| `403 Forbidden` | `{ "success": false, "error": "Invalid access token" }` |
+| `403 Forbidden` | `{ "success": false, "error": "Token expired" }` |
+| `429 Too Many Requests` | `{ "success": false, "error": "Too many requests from this IP, please try again after 15 minutes" }` |
+
+Returns an empty array if the user has no bookmarks.
+
+---
+
+## Setup
+
+**Prerequisites:** Node.js, a PostgreSQL database (Supabase recommended)
+
+1. Clone the repo and install dependencies:
+   ```bash
+   git clone <repo-url>
+   cd Twitter-Bookmark-Organizer
+   npm install
+   ```
+
+2. Create a `.env` file in the project root:
+   ```
+   PG_CONNECTION_STRING=<your-postgres-connection-string>
+   SECRET_ACCESS_TOKEN=<a-long-random-secret>
+   ```
+
+3. Run database migrations to create the `users` and `bookmarks` tables:
+   ```bash
+   npx knex migrate:latest
+   ```
+
+4. Start the server:
+   ```bash
+   node server.js
+   ```
+
+The server runs on `http://localhost:3000`.
+
+---
+
+## Running Tests
+
+```bash
+npm test
+```
+
+Uses Jest + Supertest against a real database. The test suite registers a test user in `beforeAll` and deletes all test data in `afterAll` — no manual DB setup required.
